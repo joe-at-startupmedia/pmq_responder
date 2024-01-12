@@ -14,7 +14,7 @@ type MqResponder BidirectionalQueue
 
 func NewResponder(config QueueConfig, owner *Ownership) (*MqResponder, error) {
 
-	sender, err := openQueueForResponder(config, owner, "send")
+	requester, err := openQueueForResponder(config, owner, "rqst")
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +25,7 @@ func NewResponder(config QueueConfig, owner *Ownership) (*MqResponder, error) {
 	}
 
 	mqr := MqResponder{
-		sender,
+		requester,
 		responder,
 	}
 
@@ -71,7 +71,7 @@ func (mqr *MqResponder) HandleRequestWithLag(msgHandler ResponderCallback, lag i
 }
 
 func (mqr *MqResponder) handleRequest(msgHandler ResponderCallback, lag int) error {
-	msg, _, err := mqr.mqSend.Receive()
+	msg, _, err := mqr.mqRqst.Receive()
 	if err != nil {
 		//EAGAIN simply means the queue is empty when O_NONBLOCK is set
 		if errors.Is(err, syscall.EAGAIN) {

@@ -9,17 +9,17 @@ import (
 	"github.com/joe-at-startupmedia/posix_mq"
 )
 
-const maxSendTickNum = 10
+const maxRequestTickNum = 10
 
 func main() {
 	resp_c := make(chan int)
 	go responder(resp_c)
 	//wait for the responder to create the posix_mq files
 	time.Sleep(1 * time.Second)
-	send_c := make(chan int)
-	go sender(send_c)
+	request_c := make(chan int)
+	go requester(request_c)
 	<-resp_c
-	<-send_c
+	<-request_c
 }
 
 func responder(c chan int) {
@@ -56,23 +56,23 @@ func responder(c chan int) {
 
 		fmt.Println("Responder: Sent a response")
 
-		if count >= maxSendTickNum {
+		if count >= maxRequestTickNum {
 			break
 		}
 	}
 }
 
-func sender(c chan int) {
-	mqs, err := pmq_responder.NewSender(pmq_responder.QueueConfig{
+func requester(c chan int) {
+	mqs, err := pmq_responder.NewRequester(pmq_responder.QueueConfig{
 		Name: "posix_mq_example_duplex_lag",
 	}, nil)
 	if err != nil {
-		log.Printf("Sender: could not initialize: %s", err)
+		log.Printf("Requester: could not initialize: %s", err)
 		c <- 1
 	}
 	defer func() {
 		(*pmq_responder.BidirectionalQueue)(mqs).Close()
-		fmt.Println("Sender: finished and closed")
+		fmt.Println("Requester: finished and closed")
 		c <- 0
 	}()
 	count := 0
@@ -82,30 +82,30 @@ func sender(c chan int) {
 		request := fmt.Sprintf("Hello, World : %d\n", count)
 		go requestResponse(mqs, request, ch)
 
-		if count >= maxSendTickNum {
+		if count >= maxRequestTickNum {
 			break
 		}
 
 		time.Sleep(1 * time.Second)
 	}
 
-	result := make([]pmqResponse, maxSendTickNum)
+	result := make([]pmqResponse, maxRequestTickNum)
 	for i := range result {
 		result[i] = <-ch
 		if result[i].status {
 			fmt.Println(result[i].response)
 		} else {
-			fmt.Printf("Sender: Got error: %s \n", result[i].response)
+			fmt.Printf("Requester: Got error: %s \n", result[i].response)
 		}
 	}
 }
 
-func requestResponse(mqs *pmq_responder.MqSender, msg string, c chan pmqResponse) {
-	if err := mqs.Send([]byte(msg), 0); err != nil {
+func requestResponse(mqs *pmq_responder.MqRequester, msg string, c chan pmqResponse) {
+	if err := mqs.Request([]byte(msg), 0); err != nil {
 		c <- pmqResponse{fmt.Sprintf("%s", err), false}
 		return
 	}
-	fmt.Printf("Sender: sent a new request: %s", msg)
+	fmt.Printf("Requester: sent a new request: %s", msg)
 
 	resp, _, err := mqs.WaitForResponse(time.Second)
 
@@ -114,7 +114,7 @@ func requestResponse(mqs *pmq_responder.MqSender, msg string, c chan pmqResponse
 		return
 	}
 
-	c <- pmqResponse{fmt.Sprintf("Sender: got a response: %s\n", resp), true}
+	c <- pmqResponse{fmt.Sprintf("Requester: got a response: %s\n", resp), true}
 }
 
 type pmqResponse struct {

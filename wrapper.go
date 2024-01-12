@@ -28,12 +28,12 @@ func NewMessageQueue(config *QueueConfig) (*posix_mq.MessageQueue, error) {
 }
 
 type BidirectionalQueue struct {
-	mqSend *posix_mq.MessageQueue
+	mqRqst *posix_mq.MessageQueue
 	mqResp *posix_mq.MessageQueue
 }
 
 func (bdr *BidirectionalQueue) Close() error {
-	if err := bdr.mqSend.Close(); err != nil {
+	if err := bdr.mqRqst.Close(); err != nil {
 		return err
 	}
 	return bdr.mqResp.Close()

@@ -3,29 +3,30 @@ package pmq_responder
 import (
 	"errors"
 	"fmt"
-	"github.com/joe-at-startupmedia/posix_mq"
 	"time"
+
+	"github.com/joe-at-startupmedia/posix_mq"
 )
 
-type MqSender BidirectionalQueue
+type MqRequester BidirectionalQueue
 
-func NewSender(config QueueConfig, owner *Ownership) (*MqSender, error) {
-	sender, err := openQueueForSender(config, owner, "send")
+func NewRequester(config QueueConfig, owner *Ownership) (*MqRequester, error) {
+	requester, err := openQueueForRequester(config, owner, "rqst")
 	if err != nil {
 		return nil, err
 	}
 
-	responder, err := openQueueForSender(config, owner, "resp")
+	responder, err := openQueueForRequester(config, owner, "resp")
 
-	mqs := MqSender{
-		sender,
+	mqs := MqRequester{
+		requester,
 		responder,
 	}
 
 	return &mqs, err
 }
 
-func openQueueForSender(config QueueConfig, owner *Ownership, postfix string) (*posix_mq.MessageQueue, error) {
+func openQueueForRequester(config QueueConfig, owner *Ownership, postfix string) (*posix_mq.MessageQueue, error) {
 	if config.Flags == 0 {
 		config.Flags = posix_mq.O_RDWR
 	}
@@ -48,14 +49,14 @@ func openQueueForSender(config QueueConfig, owner *Ownership, postfix string) (*
 	return messageQueue, nil
 }
 
-func (mqs *MqSender) Send(data []byte, priority uint) error {
-	return mqs.mqSend.Send(data, priority)
+func (mqs *MqRequester) Request(data []byte, priority uint) error {
+	return mqs.mqRqst.Send(data, priority)
 }
 
-func (mqs *MqSender) WaitForResponse(duration time.Duration) ([]byte, uint, error) {
+func (mqs *MqRequester) WaitForResponse(duration time.Duration) ([]byte, uint, error) {
 	return mqs.mqResp.TimedReceive(duration)
 }
 
-func (mqs *MqSender) CloseSender() error {
+func (mqs *MqRequester) CloseRequester() error {
 	return (*BidirectionalQueue)(mqs).Close()
 }
