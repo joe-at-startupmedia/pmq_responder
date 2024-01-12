@@ -1,4 +1,4 @@
-module pmq_responder
+module github.com/joe-at-startupmedia/pmq_responder
 
 go 1.21
 
