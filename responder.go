@@ -10,10 +10,7 @@ import (
 
 type ResponderCallback func(msq []byte) (processed []byte, err error)
 
-type MqResponder struct {
-	mqSend *posix_mq.MessageQueue
-	mqResp *posix_mq.MessageQueue
-}
+type MqResponder BidirectionalQueue
 
 func NewResponder(config QueueConfig, owner *Ownership) (*MqResponder, error) {
 
@@ -93,11 +90,4 @@ func (mqr *MqResponder) handleRequest(msgHandler ResponderCallback, lag int) err
 
 	err = mqr.mqResp.Send(processed, 0)
 	return err
-}
-
-func (mqr *MqResponder) CloseResponder() error {
-	if err := mqr.mqSend.Close(); err != nil {
-		return err
-	}
-	return mqr.mqResp.Close()
 }

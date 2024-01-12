@@ -5,12 +5,10 @@ GOFILES := $(shell find . -name "*.go")
 all: build
 
 .PHONY: build
-
-build: build_simple
-
-.PHONY: build_simple
-build_simple:
-	$(GO) build -o bin/simple example/simple.go
+build: 
+	$(GO) mod tidy
+	$(GO) build -o bin/simple example/simple/simple.go
+	$(GO) build -o bin/timeout example/timeout/timeout.go
 
 .PHONY: test
 test: 
@@ -19,6 +17,7 @@ test:
 .PHONY: examples
 examples: 
 	./bin/simple
+	./bin/timeout
 
 .PHONY: fmt
 fmt:

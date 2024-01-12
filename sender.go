@@ -7,10 +7,7 @@ import (
 	"time"
 )
 
-type MqSender struct {
-	mqSend *posix_mq.MessageQueue
-	mqResp *posix_mq.MessageQueue
-}
+type MqSender BidirectionalQueue
 
 func NewSender(config QueueConfig, owner *Ownership) (*MqSender, error) {
 	sender, err := openQueueForSender(config, owner, "send")
@@ -57,11 +54,4 @@ func (mqs *MqSender) Send(data []byte, priority uint) error {
 
 func (mqs *MqSender) WaitForResponse(duration time.Duration) ([]byte, uint, error) {
 	return mqs.mqResp.TimedReceive(duration)
-}
-
-func (mqs *MqSender) Close() error {
-	if err := mqs.mqSend.Close(); err != nil {
-		return err
-	}
-	return mqs.mqResp.Close()
 }
