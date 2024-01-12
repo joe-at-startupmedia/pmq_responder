@@ -91,3 +91,7 @@ func (mqr *MqResponder) handleRequest(msgHandler ResponderCallback, lag int) err
 	err = mqr.mqResp.Send(processed, 0)
 	return err
 }
+
+func (mqr *MqResponder) CloseResponder() error {
+	return (*BidirectionalQueue)(mqr).Close()
+}

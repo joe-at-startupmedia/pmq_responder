@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/joe-at-startupmedia/pmq_responder"
 	"log"
-	"pmq_responder"
 	"time"
 
 	"github.com/joe-at-startupmedia/posix_mq"
@@ -33,7 +33,7 @@ func responder(c chan int) {
 		c <- 1
 	}
 	defer func() {
-		(*pmq_responder.BidirectionalQueue)(mqr).Close()
+		mqr.CloseResponder()
 		fmt.Println("Responder: finished and unlinked")
 		c <- 0
 	}()

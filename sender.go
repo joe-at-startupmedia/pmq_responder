@@ -55,3 +55,7 @@ func (mqs *MqSender) Send(data []byte, priority uint) error {
 func (mqs *MqSender) WaitForResponse(duration time.Duration) ([]byte, uint, error) {
 	return mqs.mqResp.TimedReceive(duration)
 }
+
+func (mqs *MqSender) CloseSender() error {
+	return (*BidirectionalQueue)(mqs).Close()
+}

@@ -19,17 +19,12 @@ const (
 
 // GetFile gets the file on the OS where the queues are stored
 func (config *QueueConfig) GetFile() string {
-	return config.GetFile()
+	return (*posix_mq.QueueConfig)(config).GetFile()
 }
 
 // NewMessageQueue returns an instance of the message queue given a QueueConfig.
 func NewMessageQueue(config *QueueConfig) (*posix_mq.MessageQueue, error) {
-
 	return posix_mq.NewMessageQueue((*posix_mq.QueueConfig)(config))
-}
-
-type IBidirectionalQueue interface {
-	Close()
 }
 
 type BidirectionalQueue struct {
