@@ -95,3 +95,7 @@ func (mqr *MqResponder) handleRequest(msgHandler ResponderCallback, lag int) err
 func (mqr *MqResponder) CloseResponder() error {
 	return (*BidirectionalQueue)(mqr).Close()
 }
+
+func (mqr *MqResponder) UnlinkResponder() error {
+	return (*BidirectionalQueue)(mqr).Unlink()
+}

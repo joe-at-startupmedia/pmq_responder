@@ -32,7 +32,7 @@ func responder(c chan int) {
 		c <- 1
 	}
 	defer func() {
-		mqr.CloseResponder()
+		mqr.UnlinkResponder()
 		fmt.Println("Responder: finished and unlinked")
 		c <- 0
 	}()

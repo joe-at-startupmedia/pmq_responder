@@ -60,3 +60,7 @@ func (mqs *MqRequester) WaitForResponse(duration time.Duration) ([]byte, uint, e
 func (mqs *MqRequester) CloseRequester() error {
 	return (*BidirectionalQueue)(mqs).Close()
 }
+
+func (mqs *MqRequester) UnlinkRequester() error {
+	return (*BidirectionalQueue)(mqs).Unlink()
+}

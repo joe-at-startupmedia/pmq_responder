@@ -38,3 +38,10 @@ func (bdr *BidirectionalQueue) Close() error {
 	}
 	return bdr.mqResp.Close()
 }
+
+func (bdr *BidirectionalQueue) Unlink() error {
+	if err := bdr.mqRqst.Unlink(); err != nil {
+		return err
+	}
+	return bdr.mqResp.Unlink()
+}

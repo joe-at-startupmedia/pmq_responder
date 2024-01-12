@@ -33,7 +33,7 @@ func responder(c chan int) {
 		c <- 1
 	}
 	defer func() {
-		mqr.CloseResponder()
+		mqr.UnlinkResponder()
 		fmt.Println("Responder: finished and unlinked")
 		c <- 0
 	}()
@@ -71,7 +71,7 @@ func requester(c chan int) {
 		c <- 1
 	}
 	defer func() {
-		(*pmq_responder.BidirectionalQueue)(mqs).Close()
+		mqs.CloseRequester()
 		fmt.Println("Requester: finished and closed")
 		c <- 0
 	}()
