@@ -12,7 +12,9 @@ import (
 
 type ResponderCallback func(msq []byte) (processed []byte, err error)
 
-type ResponderProtoCallback func(mqs *MqRequest) (mqr *MqResponse, err error)
+type ResponderMqRequestCallback func(mqs *MqRequest) (mqr *MqResponse, err error)
+
+type ResponderFromProtoMessageCallback func(mqs *proto.Message) (processed []byte, err error)
 
 type MqResponder BidirectionalQueue
 
@@ -66,7 +68,33 @@ func openQueueForResponder(config QueueConfig, owner *Ownership, postfix string)
 	return messageQueue, nil
 }
 
-func (mqr *MqResponder) HandleRequestProto(msgHandler ResponderProtoCallback) error {
+// HandleMqRequest provides a concrete implementation of HandleRequestFromProto using the local MqRequest type
+func (mqr *MqResponder) HandleMqRequest(requestProcessor ResponderMqRequestCallback) error {
+
+	return mqr.HandleRequestFromProto(&protos.Request{}, func(pbm *proto.Message) (processed []byte, err error) {
+
+		mqReq, err := ProtoMessageToMqRequest(pbm)
+		if err != nil {
+			return nil, err
+		}
+
+		mqResp, err := requestProcessor(mqReq)
+		if err != nil {
+			return nil, err
+		}
+
+		data, err := proto.Marshal(mqResp.AsProtobuf())
+
+		if err != nil {
+			return nil, fmt.Errorf("marshaling error: %w", err)
+		}
+
+		return data, nil
+	})
+}
+
+// HandleRequestFromProto used to process arbitrary protobuf messages using a callback
+func (mqr *MqResponder) HandleRequestFromProto(protocMsg proto.Message, msgHandler ResponderFromProtoMessageCallback) error {
 	msg, _, err := mqr.mqRqst.Receive()
 	if err != nil {
 		//EAGAIN simply means the queue is empty when O_NONBLOCK is set
@@ -77,22 +105,17 @@ func (mqr *MqResponder) HandleRequestProto(msgHandler ResponderProtoCallback) er
 		return err
 	}
 
-	newRequest := &protos.Request{}
-	err = proto.Unmarshal(msg, newRequest)
+	err = proto.Unmarshal(msg, protocMsg)
 	if err != nil {
 		return fmt.Errorf("unmarshaling error: %w", err)
 	}
 
-	processed, err := msgHandler(ToMqRequest(newRequest))
+	processed, err := msgHandler(&protocMsg)
 	if err != nil {
 		return err
 	}
-	data, err := proto.Marshal(processed.AsProtobuf())
-	if err != nil {
-		return fmt.Errorf("marshaling error: %w", err)
-	}
-	err = mqr.mqResp.Send(data, 0)
-	return err
+
+	return mqr.mqResp.Send(processed, 0)
 }
 
 func (mqr *MqResponder) HandleRequest(msgHandler ResponderCallback) error {

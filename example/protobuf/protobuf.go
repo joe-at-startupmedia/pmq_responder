@@ -41,7 +41,7 @@ func responder(c chan int) {
 	for {
 		time.Sleep(1 * time.Second)
 		count++
-		if err := mqr.HandleRequestProto(handleMessage); err != nil {
+		if err := mqr.HandleMqRequest(requestProcessor); err != nil {
 			fmt.Printf("Responder: error handling request: %s\n", err)
 			continue
 		}
@@ -73,7 +73,7 @@ func requester(c chan int) {
 	for {
 		count++
 		request := fmt.Sprintf("Hello, World : %d\n", count)
-		if err := mqs.RequestProto(&pmq_responder.MqRequest{
+		if err := mqs.RequestUsingMqRequest(&pmq_responder.MqRequest{
 			Arg1: request,
 		}, 0); err != nil {
 			fmt.Printf("Requester: error requesting request: %s\n", err)
@@ -82,7 +82,7 @@ func requester(c chan int) {
 
 		fmt.Printf("Requester: sent a new request: %s", request)
 
-		msg, _, err := mqs.WaitForResponseProto(time.Second)
+		msg, _, err := mqs.WaitForMqResponse(time.Second)
 
 		if err != nil {
 			fmt.Printf("Requester: error getting response: %s\n", err)
@@ -90,6 +90,7 @@ func requester(c chan int) {
 		}
 
 		fmt.Printf("Requester: got a response: %s\n", msg.ValueStr)
+		//fmt.Printf("Requester: got a response: %-v\n", msg)
 
 		if count >= maxRequestTickNum {
 			break
@@ -99,8 +100,9 @@ func requester(c chan int) {
 	}
 }
 
-func handleMessage(request *pmq_responder.MqRequest) (*pmq_responder.MqResponse, error) {
+func requestProcessor(request *pmq_responder.MqRequest) (*pmq_responder.MqResponse, error) {
 	response := pmq_responder.MqResponse{}
+	//assigns the response.request_id
 	response.PrepareFromRequest(request)
 	response.ValueStr = fmt.Sprintf("I recieved request: %s\n", request.Arg1)
 	return &response, nil

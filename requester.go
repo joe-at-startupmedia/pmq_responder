@@ -55,7 +55,7 @@ func (mqs *MqRequester) Request(data []byte, priority uint) error {
 	return mqs.mqRqst.Send(data, priority)
 }
 
-func (mqs *MqRequester) RequestProto(req *MqRequest, priority uint) error {
+func (mqs *MqRequester) RequestUsingMqRequest(req *MqRequest, priority uint) error {
 	if !req.HasId() {
 		req.SetId()
 	}
@@ -63,21 +63,37 @@ func (mqs *MqRequester) RequestProto(req *MqRequest, priority uint) error {
 	if err != nil {
 		return fmt.Errorf("marshaling error: %w", err)
 	}
-	return mqs.mqRqst.Send(data, priority)
+	return mqs.Request(data, priority)
+}
+
+func (mqs *MqRequester) RequestUsingProto(req *proto.Message, priority uint) error {
+	data, err := proto.Marshal(*req)
+	if err != nil {
+		return fmt.Errorf("marshaling error: %w", err)
+	}
+	return mqs.Request(data, priority)
 }
 
 func (mqs *MqRequester) WaitForResponse(duration time.Duration) ([]byte, uint, error) {
 	return mqs.mqResp.TimedReceive(duration)
 }
 
-func (mqs *MqRequester) WaitForResponseProto(duration time.Duration) (*MqResponse, uint, error) {
+func (mqs *MqRequester) WaitForMqResponse(duration time.Duration) (*MqResponse, uint, error) {
+	pbm, prio, err := mqs.WaitForProto(&protos.Response{}, duration)
+	mqResp, err := ProtoMessageToMqResponse(pbm)
+	if err != nil {
+		return nil, 0, err
+	}
+	return mqResp, prio, err
+}
+
+func (mqs *MqRequester) WaitForProto(pbm proto.Message, duration time.Duration) (*proto.Message, uint, error) {
 	data, prio, err := mqs.mqResp.TimedReceive(duration)
 	if err != nil {
 		return nil, 0, err
 	}
-	newResponse := &protos.Response{}
-	err = proto.Unmarshal(data, newResponse)
-	return ToMqResponse(newResponse), prio, err
+	err = proto.Unmarshal(data, pbm)
+	return &pbm, prio, err
 }
 
 func (mqs *MqRequester) CloseRequester() error {
