@@ -8,6 +8,7 @@ all: build
 build: 
 	$(GO) mod tidy
 	$(GO) build -o bin/simple example/simple/simple.go
+	$(GO) build -o bin/protobuf example/protobuf/protobuf.go
 	$(GO) build -o bin/timeout example/timeout/timeout.go
 
 .PHONY: test
@@ -17,7 +18,11 @@ test:
 .PHONY: examples
 examples: 
 	./bin/simple
+	./bin/protobuf
 	./bin/timeout
+
+protogen:
+	protoc protos/*.proto  --go_out=.
 
 .PHONY: fmt
 fmt:

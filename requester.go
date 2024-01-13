@@ -3,6 +3,8 @@ package pmq_responder
 import (
 	"errors"
 	"fmt"
+	"github.com/joe-at-startupmedia/pmq_responder/protos"
+	"google.golang.org/protobuf/proto"
 	"time"
 
 	"github.com/joe-at-startupmedia/posix_mq"
@@ -53,8 +55,29 @@ func (mqs *MqRequester) Request(data []byte, priority uint) error {
 	return mqs.mqRqst.Send(data, priority)
 }
 
+func (mqs *MqRequester) RequestProto(req *MqRequest, priority uint) error {
+	if !req.HasId() {
+		req.SetId()
+	}
+	data, err := proto.Marshal(req.AsProtobuf())
+	if err != nil {
+		return fmt.Errorf("marshaling error: %w", err)
+	}
+	return mqs.mqRqst.Send(data, priority)
+}
+
 func (mqs *MqRequester) WaitForResponse(duration time.Duration) ([]byte, uint, error) {
 	return mqs.mqResp.TimedReceive(duration)
+}
+
+func (mqs *MqRequester) WaitForResponseProto(duration time.Duration) (*MqResponse, uint, error) {
+	data, prio, err := mqs.mqResp.TimedReceive(duration)
+	if err != nil {
+		return nil, 0, err
+	}
+	newResponse := &protos.Response{}
+	err = proto.Unmarshal(data, newResponse)
+	return ToMqResponse(newResponse), prio, err
 }
 
 func (mqs *MqRequester) CloseRequester() error {
