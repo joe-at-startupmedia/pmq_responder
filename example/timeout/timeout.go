@@ -23,7 +23,7 @@ func main() {
 }
 
 func responder(c chan int) {
-	mqr, err := pmq_responder.NewResponder(pmq_responder.QueueConfig{
+	mqr, err := pmq_responder.NewResponder(&pmq_responder.QueueConfig{
 		Name:  "posix_mq_example_duplex_lag",
 		Flags: posix_mq.O_RDWR | posix_mq.O_CREAT,
 	}, nil)
@@ -63,7 +63,7 @@ func responder(c chan int) {
 }
 
 func requester(c chan int) {
-	mqs, err := pmq_responder.NewRequester(pmq_responder.QueueConfig{
+	mqs, err := pmq_responder.NewRequester(&pmq_responder.QueueConfig{
 		Name: "posix_mq_example_duplex_lag",
 	}, nil)
 	if err != nil {

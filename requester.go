@@ -1,7 +1,6 @@
 package pmq_responder
 
 import (
-	"errors"
 	"fmt"
 	"github.com/joe-at-startupmedia/pmq_responder/protos"
 	"google.golang.org/protobuf/proto"
@@ -12,7 +11,7 @@ import (
 
 type MqRequester BidirectionalQueue
 
-func NewRequester(config QueueConfig, owner *Ownership) (*MqRequester, error) {
+func NewRequester(config *QueueConfig, owner *Ownership) (*MqRequester, error) {
 	requester, err := openQueueForRequester(config, owner, "rqst")
 	if err != nil {
 		return nil, err
@@ -28,27 +27,11 @@ func NewRequester(config QueueConfig, owner *Ownership) (*MqRequester, error) {
 	return &mqs, err
 }
 
-func openQueueForRequester(config QueueConfig, owner *Ownership, postfix string) (*posix_mq.MessageQueue, error) {
+func openQueueForRequester(config *QueueConfig, owner *Ownership, postfix string) (*posix_mq.MessageQueue, error) {
 	if config.Flags == 0 {
 		config.Flags = posix_mq.O_RDWR
 	}
-	config.Name = fmt.Sprintf("%s_%s", config.Name, postfix)
-	var (
-		messageQueue *posix_mq.MessageQueue
-		err          error
-	)
-	if owner != nil && owner.IsValid() {
-		config.Mode = 0660
-		messageQueue, err = NewMessageQueue(&config)
-
-	} else {
-		config.Mode = 0666
-		messageQueue, err = NewMessageQueue(&config)
-	}
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Could not create message queue %s: %-v", config.GetFile(), err))
-	}
-	return messageQueue, nil
+	return NewMessageQueueWithOwnership(*config, owner, postfix)
 }
 
 func (mqs *MqRequester) Request(data []byte, priority uint) error {

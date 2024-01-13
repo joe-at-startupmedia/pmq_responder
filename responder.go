@@ -18,7 +18,7 @@ type ResponderFromProtoMessageCallback func(mqs *proto.Message) (processed []byt
 
 type MqResponder BidirectionalQueue
 
-func NewResponder(config QueueConfig, owner *Ownership) (*MqResponder, error) {
+func NewResponder(config *QueueConfig, owner *Ownership) (*MqResponder, error) {
 
 	requester, err := openQueueForResponder(config, owner, "rqst")
 	if err != nil {
@@ -38,34 +38,12 @@ func NewResponder(config QueueConfig, owner *Ownership) (*MqResponder, error) {
 	return &mqr, nil
 }
 
-func openQueueForResponder(config QueueConfig, owner *Ownership, postfix string) (*posix_mq.MessageQueue, error) {
+func openQueueForResponder(config *QueueConfig, owner *Ownership, postfix string) (*posix_mq.MessageQueue, error) {
 
 	if config.Flags == 0 {
 		config.Flags = O_RDWR | O_CREAT | O_NONBLOCK
 	}
-	config.Name = fmt.Sprintf("%s_%s", config.Name, postfix)
-	var (
-		messageQueue *posix_mq.MessageQueue
-		err          error
-	)
-	if owner != nil && owner.IsValid() {
-		config.Mode = 0660
-		messageQueue, err = NewMessageQueue(&config)
-
-	} else {
-		config.Mode = 0666
-		messageQueue, err = NewMessageQueue(&config)
-	}
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Could not create message queue %s: %-v", config.GetFile(), err))
-	}
-	if owner != nil {
-		err = owner.ApplyPermissions(&config)
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("Could not apply permissions %s: %-v", config.GetFile(), err))
-		}
-	}
-	return messageQueue, nil
+	return NewMessageQueueWithOwnership(*config, owner, postfix)
 }
 
 // HandleMqRequest provides a concrete implementation of HandleRequestFromProto using the local MqRequest type

@@ -75,30 +75,33 @@ func (o *Ownership) IsValid() bool {
 		fmt.Println("Cannot infer user from the group alone")
 		return false
 	}
-	return hasGroup && hasUser
+	return hasGroup || hasUser
 }
 
-func (o *Ownership) ApplyPermissions(config *QueueConfig) error {
+func ApplyPermissions(o *Ownership, config *QueueConfig) error {
 
-	hasGroup, group, err := o.HasGroup()
-	if err != nil {
-		return errors.New("Cannot get group")
-	}
-	hasUser, user, err := o.HasUser()
-	if err != nil {
-		return errors.New("Cannot get user")
-	}
+	if o != nil {
+		hasGroup, group, err := o.HasGroup()
+		if err != nil {
+			return errors.New("Cannot get group")
+		}
+		hasUser, user, err := o.HasUser()
+		if err != nil {
+			return errors.New("Cannot get user")
+		}
 
-	if hasGroup || hasUser {
-		err = os.Chmod(config.GetFile(), 0660)
+		if hasGroup || hasUser {
+			err = os.Chmod(config.GetFile(), os.FileMode(config.Mode))
+		} else {
+			return os.Chmod(config.GetFile(), os.FileMode(config.Mode))
+		}
+		if hasGroup && hasUser {
+			err = os.Chown(config.GetFile(), user.Gid, group.Gid)
+		} else if hasUser {
+			err = os.Chown(config.GetFile(), user.Gid, user.Gid)
+		}
+		return err
 	} else {
-		return os.Chmod(config.GetFile(), 0666)
+		return os.Chmod(config.GetFile(), os.FileMode(config.Mode))
 	}
-	if hasGroup && hasUser {
-		err = os.Chown(config.GetFile(), user.Gid, group.Gid)
-	} else if hasUser {
-		err = os.Chown(config.GetFile(), user.Gid, user.Gid)
-	}
-
-	return err
 }

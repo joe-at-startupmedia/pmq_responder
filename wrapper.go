@@ -1,6 +1,8 @@
 package pmq_responder
 
 import (
+	"errors"
+	"fmt"
 	"github.com/joe-at-startupmedia/posix_mq"
 )
 
@@ -25,6 +27,38 @@ func (config *QueueConfig) GetFile() string {
 // NewMessageQueue returns an instance of the message queue given a QueueConfig.
 func NewMessageQueue(config *QueueConfig) (*posix_mq.MessageQueue, error) {
 	return posix_mq.NewMessageQueue((*posix_mq.QueueConfig)(config))
+}
+
+func NewMessageQueueWithOwnership(config QueueConfig, owner *Ownership, postfix string) (*posix_mq.MessageQueue, error) {
+
+	if len(postfix) > 0 {
+		config.Name = fmt.Sprintf("%s_%s", config.Name, postfix)
+	}
+
+	var (
+		messageQueue *posix_mq.MessageQueue
+	)
+
+	if config.Mode == 0 {
+		if owner != nil && owner.IsValid() {
+			config.Mode = 0660
+
+		} else {
+			config.Mode = 0666
+		}
+	}
+
+	messageQueue, err := NewMessageQueue(&config)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Could not create message queue %s: %-v", config.GetFile(), err))
+	}
+
+	err = ApplyPermissions(owner, &config)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Could not apply permissions %s: %-v", config.GetFile(), err))
+	}
+
+	return messageQueue, nil
 }
 
 type BidirectionalQueue struct {

@@ -10,6 +10,10 @@ import (
 
 const maxRequestTickNum = 10
 
+var owner = pmq_responder.Ownership{
+	//Username: "nobody",//uncomment to test ownership handling and errors
+}
+
 func main() {
 	resp_c := make(chan int)
 	go responder(resp_c)
@@ -19,23 +23,27 @@ func main() {
 	go requester(request_c)
 	<-resp_c
 	<-request_c
+	time.Sleep(5 * time.Second)
 }
 
 func responder(c chan int) {
-	mqr, err := pmq_responder.NewResponder(pmq_responder.QueueConfig{
+	config := pmq_responder.QueueConfig{
 		Name:  "posix_mq_example_duplex",
 		Flags: posix_mq.O_RDWR | posix_mq.O_CREAT,
-	}, nil)
-
-	if err != nil {
-		log.Printf("Responder: could not initialize: %s", err)
-		c <- 1
 	}
+	mqr, err := pmq_responder.NewResponder(&config, &owner)
 	defer func() {
-		mqr.UnlinkResponder()
+		if mqr != nil {
+			mqr.UnlinkResponder()
+		}
 		fmt.Println("Responder: finished and unlinked")
 		c <- 0
 	}()
+	if err != nil {
+		log.Printf("Responder: could not initialize: %s", err)
+		c <- 1
+		return
+	}
 
 	count := 0
 	for {
@@ -55,19 +63,21 @@ func responder(c chan int) {
 }
 
 func requester(c chan int) {
-	mqs, err := pmq_responder.NewRequester(pmq_responder.QueueConfig{
+	mqs, err := pmq_responder.NewRequester(&pmq_responder.QueueConfig{
 		Name: "posix_mq_example_duplex",
-	}, nil)
-
-	if err != nil {
-		log.Printf("Requester: could not initialize: %s", err)
-		c <- 1
-	}
+	}, &owner)
 	defer func() {
-		mqs.CloseRequester()
+		if mqs != nil {
+			mqs.CloseRequester()
+		}
 		fmt.Println("Requester: finished and closed")
 		c <- 0
 	}()
+	if err != nil {
+		log.Printf("Requester: could not initialize: %s", err)
+		c <- 1
+		return
+	}
 
 	count := 0
 	for {
