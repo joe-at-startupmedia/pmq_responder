@@ -13,6 +13,8 @@ import (
 
 const maxRequestTickNum = 10
 
+const queue_name = "pmqr_example_protobuf"
+
 var owner = pmq_responder.Ownership{
 	//Username: "nobody", //uncomment to test ownership handling and errors
 }
@@ -32,7 +34,7 @@ func main() {
 
 func responder(c chan int) {
 	config := pmq_responder.QueueConfig{
-		Name:  "posix_mq_example_duplex",
+		Name:  queue_name,
 		Flags: posix_mq.O_RDWR | posix_mq.O_CREAT,
 	}
 	mqr, err := pmq_responder.NewResponder(&config, &owner)
@@ -66,7 +68,7 @@ func responder(c chan int) {
 
 func requester(c chan int) {
 	mqs, err := pmq_responder.NewRequester(&pmq_responder.QueueConfig{
-		Name: "posix_mq_example_duplex",
+		Name: queue_name,
 	}, &owner)
 	defer func() {
 		pmq_responder.CloseRequester(mqs)

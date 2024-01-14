@@ -11,6 +11,8 @@ import (
 
 const maxRequestTickNum = 10
 
+const queue_name = "pmqr_example_timeout"
+
 func main() {
 	resp_c := make(chan int)
 	go responder(resp_c)
@@ -20,23 +22,26 @@ func main() {
 	go requester(request_c)
 	<-resp_c
 	<-request_c
+	//gives time for deferred functions to complete
+	time.Sleep(2 * time.Second)
 }
 
 func responder(c chan int) {
-	mqr, err := pmq_responder.NewResponder(&pmq_responder.QueueConfig{
-		Name:  "posix_mq_example_duplex_lag",
+	config := pmq_responder.QueueConfig{
+		Name:  queue_name,
 		Flags: posix_mq.O_RDWR | posix_mq.O_CREAT,
-	}, nil)
-
-	if err != nil {
-		log.Printf("Responder: could not initialize: %s", err)
-		c <- 1
 	}
+	mqr, err := pmq_responder.NewResponder(&config, nil)
 	defer func() {
-		mqr.UnlinkResponder()
+		pmq_responder.UnlinkResponder(mqr)
 		fmt.Println("Responder: finished and unlinked")
 		c <- 0
 	}()
+	if err != nil {
+		log.Printf("Responder: could not initialize: %s", err)
+		c <- 1
+		return
+	}
 
 	count := 0
 	for {
@@ -63,18 +68,21 @@ func responder(c chan int) {
 }
 
 func requester(c chan int) {
+
 	mqs, err := pmq_responder.NewRequester(&pmq_responder.QueueConfig{
-		Name: "posix_mq_example_duplex_lag",
+		Name: queue_name,
 	}, nil)
-	if err != nil {
-		log.Printf("Requester: could not initialize: %s", err)
-		c <- 1
-	}
 	defer func() {
-		mqs.CloseRequester()
+		pmq_responder.CloseRequester(mqs)
 		fmt.Println("Requester: finished and closed")
 		c <- 0
 	}()
+	if err != nil {
+		log.Printf("Requester: could not initialize: %s", err)
+		c <- 1
+		return
+	}
+
 	count := 0
 	ch := make(chan pmqResponse)
 	for {
