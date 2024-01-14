@@ -42,11 +42,8 @@ func (mqs *MqRequester) RequestUsingMqRequest(req *MqRequest, priority uint) err
 	if !req.HasId() {
 		req.SetId()
 	}
-	data, err := proto.Marshal(req.AsProtobuf())
-	if err != nil {
-		return fmt.Errorf("marshaling error: %w", err)
-	}
-	return mqs.Request(data, priority)
+	pbm := proto.Message(req.AsProtobuf())
+	return mqs.RequestUsingProto(&pbm, priority)
 }
 
 func (mqs *MqRequester) RequestUsingProto(req *proto.Message, priority uint) error {
@@ -62,12 +59,12 @@ func (mqs *MqRequester) WaitForResponse(duration time.Duration) ([]byte, uint, e
 }
 
 func (mqs *MqRequester) WaitForMqResponse(duration time.Duration) (*MqResponse, uint, error) {
-	pbm, prio, err := mqs.WaitForProto(&protos.Response{}, duration)
-	mqResp, err := ProtoMessageToMqResponse(pbm)
+	mqResp := &protos.Response{}
+	_, prio, err := mqs.WaitForProto(mqResp, duration)
 	if err != nil {
 		return nil, 0, err
 	}
-	return mqResp, prio, err
+	return ProtoResponseToMqResponse(mqResp), prio, err
 }
 
 func (mqs *MqRequester) WaitForProto(pbm proto.Message, duration time.Duration) (*proto.Message, uint, error) {

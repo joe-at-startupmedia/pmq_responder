@@ -120,59 +120,25 @@ func requestUsingCmd(mqs *pmq_responder.MqRequester, req *protos.Cmd, priority u
 	if len(req.Id) == 0 {
 		req.Id = uuid.NewString()
 	}
-	data, err := proto.Marshal(req)
-	if err != nil {
-		return fmt.Errorf("marshaling error: %w", err)
-	}
-	return mqs.Request(data, priority)
+	pbm := proto.Message(req)
+	return mqs.RequestUsingProto(&pbm, priority)
 }
 
 func waitForCmdResponse(mqs *pmq_responder.MqRequester, duration time.Duration) (*protos.CmdResp, uint, error) {
-	pbm, prio, err := mqs.WaitForProto(&protos.CmdResp{}, duration)
-	mqResp, err := protoMessageToCmdResp(pbm)
+	mqResp := &protos.CmdResp{}
+	_, prio, err := mqs.WaitForProto(mqResp, duration)
 	if err != nil {
 		return nil, 0, err
 	}
 	return mqResp, prio, err
 }
 
-// protoMessageToCmdResp used to convert a generic protobuf message to a CmdResp
-func protoMessageToCmdResp(pbm *proto.Message) (*protos.CmdResp, error) {
-	msg, err := proto.Marshal(*pbm)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling error: %w", err)
-	}
-	cmdResp := protos.CmdResp{}
-	err = proto.Unmarshal(msg, &cmdResp)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshaling error: %w", err)
-	}
-	return &cmdResp, nil
-}
-
-// protoMessageToCmd used to convert a generic protobuf message to a Cmd protofbuf
-func protoMessageToCmd(pbm *proto.Message) (*protos.Cmd, error) {
-	msg, err := proto.Marshal(*pbm)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling error: %w", err)
-	}
-	cmd := protos.Cmd{}
-	err = proto.Unmarshal(msg, &cmd)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshaling error: %w", err)
-	}
-	return &cmd, nil
-}
-
 // handleCmdRequest provides a concrete implementation of HandleRequestFromProto using the local Cmd protobuf type
 func handleCmdRequest(mqr *pmq_responder.MqResponder) error {
 
-	return mqr.HandleRequestFromProto(&protos.Cmd{}, func(pbm *proto.Message) (processed []byte, err error) {
+	cmd := &protos.Cmd{}
 
-		cmd, err := protoMessageToCmd(pbm)
-		if err != nil {
-			return nil, err
-		}
+	return mqr.HandleRequestFromProto(cmd, func() (processed []byte, err error) {
 
 		cmdResp := protos.CmdResp{}
 		cmdResp.Id = cmd.Id

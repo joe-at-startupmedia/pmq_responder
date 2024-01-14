@@ -14,7 +14,7 @@ type ResponderCallback func(msq []byte) (processed []byte, err error)
 
 type ResponderMqRequestCallback func(mqs *MqRequest) (mqr *MqResponse, err error)
 
-type ResponderFromProtoMessageCallback func(mqs *proto.Message) (processed []byte, err error)
+type ResponderFromProtoMessageCallback func() (processed []byte, err error)
 
 type MqResponder BidirectionalQueue
 
@@ -49,14 +49,11 @@ func openQueueForResponder(config *QueueConfig, owner *Ownership, postfix string
 // HandleMqRequest provides a concrete implementation of HandleRequestFromProto using the local MqRequest type
 func (mqr *MqResponder) HandleMqRequest(requestProcessor ResponderMqRequestCallback) error {
 
-	return mqr.HandleRequestFromProto(&protos.Request{}, func(pbm *proto.Message) (processed []byte, err error) {
+	mqReq := &protos.Request{}
 
-		mqReq, err := ProtoMessageToMqRequest(pbm)
-		if err != nil {
-			return nil, err
-		}
+	return mqr.HandleRequestFromProto(mqReq, func() (processed []byte, err error) {
 
-		mqResp, err := requestProcessor(mqReq)
+		mqResp, err := requestProcessor(ProtoRequestToMqRequest(mqReq))
 		if err != nil {
 			return nil, err
 		}
@@ -88,7 +85,7 @@ func (mqr *MqResponder) HandleRequestFromProto(protocMsg proto.Message, msgHandl
 		return fmt.Errorf("unmarshaling error: %w", err)
 	}
 
-	processed, err := msgHandler(&protocMsg)
+	processed, err := msgHandler()
 	if err != nil {
 		return err
 	}
