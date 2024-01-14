@@ -135,3 +135,17 @@ func (mqr *MqResponder) CloseResponder() error {
 func (mqr *MqResponder) UnlinkResponder() error {
 	return (*BidirectionalQueue)(mqr).Unlink()
 }
+
+func CloseResponder(mqr *MqResponder) error {
+	if mqr != nil {
+		return mqr.CloseResponder()
+	}
+	return fmt.Errorf("pointer reference is nil")
+}
+
+func UnlinkResponder(mqr *MqResponder) error {
+	if mqr != nil {
+		return mqr.UnlinkResponder()
+	}
+	return fmt.Errorf("pointer reference is nil")
+}

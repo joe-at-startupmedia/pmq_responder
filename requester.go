@@ -86,3 +86,17 @@ func (mqs *MqRequester) CloseRequester() error {
 func (mqs *MqRequester) UnlinkRequester() error {
 	return (*BidirectionalQueue)(mqs).Unlink()
 }
+
+func CloseRequester(mqr *MqRequester) error {
+	if mqr != nil {
+		return mqr.CloseRequester()
+	}
+	return fmt.Errorf("pointer reference is nil")
+}
+
+func UnlinkRequester(mqr *MqRequester) error {
+	if mqr != nil {
+		return mqr.UnlinkRequester()
+	}
+	return fmt.Errorf("pointer reference is nil")
+}
