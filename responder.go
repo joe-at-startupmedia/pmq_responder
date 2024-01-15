@@ -70,11 +70,11 @@ func (mqr *MqResponder) HandleMqRequest(requestProcessor ResponderMqRequestCallb
 
 // HandleRequestFromProto used to process arbitrary protobuf messages using a callback
 func (mqr *MqResponder) HandleRequestFromProto(protocMsg proto.Message, msgHandler ResponderFromProtoMessageCallback) error {
-	msg, _, err := mqr.mqRqst.Receive()
+	msg, _, err := mqr.MqRqst.Receive()
 	if err != nil {
 		//EAGAIN simply means the queue is empty when O_NONBLOCK is set
-		// @TODO detect if O_NONBLOCK was set
-		if errors.Is(err, syscall.EAGAIN) {
+		mqrAttr, _ := mqr.MqRqst.GetAttr()
+		if mqrAttr != nil && (mqrAttr.Flags&O_NONBLOCK == O_NONBLOCK) && errors.Is(err, syscall.EAGAIN) {
 			return nil
 		}
 		return err
@@ -90,7 +90,7 @@ func (mqr *MqResponder) HandleRequestFromProto(protocMsg proto.Message, msgHandl
 		return err
 	}
 
-	return mqr.mqResp.Send(processed, 0)
+	return mqr.MqResp.Send(processed, 0)
 }
 
 func (mqr *MqResponder) HandleRequest(msgHandler ResponderCallback) error {
@@ -103,7 +103,7 @@ func (mqr *MqResponder) HandleRequestWithLag(msgHandler ResponderCallback, lag i
 }
 
 func (mqr *MqResponder) handleRequest(msgHandler ResponderCallback, lag int) error {
-	msg, _, err := mqr.mqRqst.Receive()
+	msg, _, err := mqr.MqRqst.Receive()
 	if err != nil {
 		//EAGAIN simply means the queue is empty when O_NONBLOCK is set
 		// @TODO detect if O_NONBLOCK was set
@@ -121,7 +121,7 @@ func (mqr *MqResponder) handleRequest(msgHandler ResponderCallback, lag int) err
 		time.Sleep(time.Duration(lag) * time.Second)
 	}
 
-	err = mqr.mqResp.Send(processed, 0)
+	err = mqr.MqResp.Send(processed, 0)
 	return err
 }
 

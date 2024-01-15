@@ -62,20 +62,24 @@ func NewMessageQueueWithOwnership(config QueueConfig, owner *Ownership, postfix 
 }
 
 type BidirectionalQueue struct {
-	mqRqst *posix_mq.MessageQueue
-	mqResp *posix_mq.MessageQueue
+	MqRqst *posix_mq.MessageQueue
+	MqResp *posix_mq.MessageQueue
 }
 
 func (bdr *BidirectionalQueue) Close() error {
-	if err := bdr.mqRqst.Close(); err != nil {
+	if err := bdr.MqRqst.Close(); err != nil {
 		return err
 	}
-	return bdr.mqResp.Close()
+	return bdr.MqResp.Close()
 }
 
 func (bdr *BidirectionalQueue) Unlink() error {
-	if err := bdr.mqRqst.Unlink(); err != nil {
+	if err := bdr.MqRqst.Unlink(); err != nil {
 		return err
 	}
-	return bdr.mqResp.Unlink()
+	return bdr.MqResp.Unlink()
+}
+
+func ForceRemoveQueue(queueFile string) error {
+	return posix_mq.ForceRemoveQueue(queueFile)
 }

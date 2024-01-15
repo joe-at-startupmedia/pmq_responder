@@ -4,6 +4,6 @@ go 1.21
 
 require (
 	github.com/google/uuid v1.5.0
-	github.com/joe-at-startupmedia/posix_mq v0.2.0
+	github.com/joe-at-startupmedia/posix_mq v0.2.1
 	google.golang.org/protobuf v1.32.0
 )

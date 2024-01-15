@@ -35,7 +35,7 @@ func openQueueForRequester(config *QueueConfig, owner *Ownership, postfix string
 }
 
 func (mqs *MqRequester) Request(data []byte, priority uint) error {
-	return mqs.mqRqst.Send(data, priority)
+	return mqs.MqRqst.Send(data, priority)
 }
 
 func (mqs *MqRequester) RequestUsingMqRequest(req *MqRequest, priority uint) error {
@@ -55,7 +55,7 @@ func (mqs *MqRequester) RequestUsingProto(req *proto.Message, priority uint) err
 }
 
 func (mqs *MqRequester) WaitForResponse(duration time.Duration) ([]byte, uint, error) {
-	return mqs.mqResp.TimedReceive(duration)
+	return mqs.MqResp.TimedReceive(duration)
 }
 
 func (mqs *MqRequester) WaitForMqResponse(duration time.Duration) (*MqResponse, uint, error) {
@@ -68,7 +68,7 @@ func (mqs *MqRequester) WaitForMqResponse(duration time.Duration) (*MqResponse, 
 }
 
 func (mqs *MqRequester) WaitForProto(pbm proto.Message, duration time.Duration) (*proto.Message, uint, error) {
-	data, prio, err := mqs.mqResp.TimedReceive(duration)
+	data, prio, err := mqs.MqResp.TimedReceive(duration)
 	if err != nil {
 		return nil, 0, err
 	}
