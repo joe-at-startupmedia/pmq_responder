@@ -18,8 +18,9 @@ func TestRecvErrwithNonblocking(t *testing.T) {
 		Name:  "pmq_testing_recverrwnblk",
 		Flags: posix_mq.O_RDWR | posix_mq.O_CREAT | posix_mq.O_NONBLOCK,
 	}
-	mqr, err := pmq_responder.NewResponder(&config, nil)
-	assertNil(t, err)
+	mqr := pmq_responder.NewResponder(&config, nil)
+	assertNil(t, mqr.ErrResp)
+	assertNil(t, mqr.ErrRqst)
 	assertNotNil(t, mqr)
 
 	msg, _, err := mqr.MqRqst.Receive()
@@ -37,11 +38,12 @@ func TestRecvwithNonblocking(t *testing.T) {
 		Name:  "pmq_testing_recvwnblk",
 		Flags: posix_mq.O_RDWR | posix_mq.O_CREAT | posix_mq.O_NONBLOCK,
 	}
-	mqr, err := pmq_responder.NewResponder(&config, nil)
-	assertNil(t, err)
+	mqr := pmq_responder.NewResponder(&config, nil)
+	assertNil(t, mqr.ErrResp)
+	assertNil(t, mqr.ErrRqst)
 	assertNotNil(t, mqr)
 
-	err = mqr.HandleRequest(func(request []byte) (processed []byte, err error) {
+	err := mqr.HandleRequest(func(request []byte) (processed []byte, err error) {
 		return []byte(fmt.Sprintf("I recieved request: %s\n", request)), nil
 	})
 	assertNil(t, err)
@@ -55,8 +57,9 @@ func TestRecvErrwithBlocking(t *testing.T) {
 		Name:  "pmq_testing_recverrwblk",
 		Flags: posix_mq.O_RDWR | posix_mq.O_CREAT,
 	}
-	mqr, err := pmq_responder.NewResponder(&config, nil)
-	assertNil(t, err)
+	mqr := pmq_responder.NewResponder(&config, nil)
+	assertNil(t, mqr.ErrResp)
+	assertNil(t, mqr.ErrRqst)
 	assertNotNil(t, mqr)
 
 	msg, _, err := mqr.MqRqst.TimedReceive(time.Second)

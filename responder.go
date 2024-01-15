@@ -18,24 +18,20 @@ type ResponderFromProtoMessageCallback func() (processed []byte, err error)
 
 type MqResponder BidirectionalQueue
 
-func NewResponder(config *QueueConfig, owner *Ownership) (*MqResponder, error) {
+func NewResponder(config *QueueConfig, owner *Ownership) *MqResponder {
 
-	requester, err := openQueueForResponder(config, owner, "rqst")
-	if err != nil {
-		return nil, err
-	}
+	requester, errRqst := openQueueForResponder(config, owner, "rqst")
 
-	responder, err := openQueueForResponder(config, owner, "resp")
-	if err != nil {
-		return nil, err
-	}
+	responder, errResp := openQueueForResponder(config, owner, "resp")
 
 	mqr := MqResponder{
 		requester,
+		errRqst,
 		responder,
+		errResp,
 	}
 
-	return &mqr, nil
+	return &mqr
 }
 
 func openQueueForResponder(config *QueueConfig, owner *Ownership, postfix string) (*posix_mq.MessageQueue, error) {
@@ -131,6 +127,14 @@ func (mqr *MqResponder) CloseResponder() error {
 
 func (mqr *MqResponder) UnlinkResponder() error {
 	return (*BidirectionalQueue)(mqr).Unlink()
+}
+
+func (mqr *MqResponder) HasErrors() bool {
+	return (*BidirectionalQueue)(mqr).HasErrors()
+}
+
+func (mqr *MqResponder) Error() error {
+	return (*BidirectionalQueue)(mqr).Error()
 }
 
 func CloseResponder(mqr *MqResponder) error {

@@ -11,17 +11,19 @@ import (
 
 type MqRequester BidirectionalQueue
 
-func NewRequester(config *QueueConfig, owner *Ownership) (*MqRequester, error, error) {
-	requester, rqstErr := openQueueForRequester(config, owner, "rqst")
+func NewRequester(config *QueueConfig, owner *Ownership) *MqRequester {
+	requester, errRqst := openQueueForRequester(config, owner, "rqst")
 
-	responder, respErr := openQueueForRequester(config, owner, "resp")
+	responder, errResp := openQueueForRequester(config, owner, "resp")
 
 	mqs := MqRequester{
 		requester,
+		errRqst,
 		responder,
+		errResp,
 	}
 
-	return &mqs, rqstErr, respErr
+	return &mqs
 }
 
 func openQueueForRequester(config *QueueConfig, owner *Ownership, postfix string) (*posix_mq.MessageQueue, error) {
@@ -79,6 +81,14 @@ func (mqs *MqRequester) CloseRequester() error {
 
 func (mqs *MqRequester) UnlinkRequester() error {
 	return (*BidirectionalQueue)(mqs).Unlink()
+}
+
+func (mqr *MqRequester) HasErrors() bool {
+	return (*BidirectionalQueue)(mqr).HasErrors()
+}
+
+func (mqr *MqRequester) Error() error {
+	return (*BidirectionalQueue)(mqr).Error()
 }
 
 func CloseRequester(mqr *MqRequester) error {

@@ -30,14 +30,14 @@ func responder(c chan int) {
 		Name:  queue_name,
 		Flags: posix_mq.O_RDWR | posix_mq.O_CREAT,
 	}
-	mqr, err := pmq_responder.NewResponder(&config, nil)
+	mqr := pmq_responder.NewResponder(&config, nil)
 	defer func() {
 		pmq_responder.UnlinkResponder(mqr)
 		fmt.Println("Responder: finished and unlinked")
 		c <- 0
 	}()
-	if err != nil {
-		log.Printf("Responder: could not initialize: %s", err)
+	if mqr.HasErrors() {
+		log.Printf("Responder: could not initialize: %s", mqr.Error())
 		c <- 1
 		return
 	}
@@ -61,7 +61,7 @@ func responder(c chan int) {
 
 func requester(c chan int) {
 
-	mqs, err := pmq_responder.NewRequester(&pmq_responder.QueueConfig{
+	mqs := pmq_responder.NewRequester(&pmq_responder.QueueConfig{
 		Name: queue_name,
 	}, nil)
 	defer func() {
@@ -69,8 +69,8 @@ func requester(c chan int) {
 		fmt.Println("Requester: finished and closed")
 		c <- 0
 	}()
-	if err != nil {
-		log.Printf("Requester: could not initialize: %s", err)
+	if mqs.HasErrors() {
+		log.Printf("Requester: could not initialize: %s", mqs.Error())
 		c <- 1
 		return
 	}
