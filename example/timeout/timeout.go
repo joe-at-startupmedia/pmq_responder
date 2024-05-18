@@ -18,10 +18,7 @@ func main() {
 	go responder(resp_c)
 	//wait for the responder to create the posix_mq files
 	time.Sleep(1 * time.Second)
-	request_c := make(chan int)
-	go requester(request_c)
-	<-resp_c
-	<-request_c
+	requester(resp_c)
 	//gives time for deferred functions to complete
 	time.Sleep(2 * time.Second)
 }
@@ -38,14 +35,11 @@ func responder(c chan int) {
 		c <- 0
 	}()
 	if mqr.HasErrors() {
-		log.Printf("Responder: could not initialize: %s", mqr.Error())
-		c <- 1
-		return
+		log.Fatalf("Responder: could not initialize: %s", mqr.Error())
 	}
 
 	count := 0
 	for {
-		time.Sleep(1 * time.Second)
 		count++
 		var err error
 		if count > 5 {
@@ -75,12 +69,9 @@ func requester(c chan int) {
 	defer func() {
 		pmq_responder.CloseRequester(mqs)
 		fmt.Println("Requester: finished and closed")
-		c <- 0
 	}()
 	if mqs.HasErrors() {
-		log.Printf("Requester: could not initialize: %s", mqs.Error())
-		c <- 1
-		return
+		log.Fatalf("Requester: could not initialize: %s", mqs.Error())
 	}
 
 	count := 0
@@ -93,8 +84,6 @@ func requester(c chan int) {
 		if count >= maxRequestTickNum {
 			break
 		}
-
-		time.Sleep(1 * time.Second)
 	}
 
 	result := make([]pmqResponse, maxRequestTickNum)
@@ -106,6 +95,7 @@ func requester(c chan int) {
 			fmt.Printf("Requester: Got error: %s \n", result[i].response)
 		}
 	}
+	<-c
 }
 
 func requestResponse(mqs *pmq_responder.MqRequester, msg string, c chan pmqResponse) {
@@ -115,7 +105,7 @@ func requestResponse(mqs *pmq_responder.MqRequester, msg string, c chan pmqRespo
 	}
 	fmt.Printf("Requester: sent a new request: %s", msg)
 
-	resp, err := mqs.WaitForResponse(time.Second)
+	resp, err := mqs.WaitForResponse(time.Second * 10)
 
 	if err != nil {
 		c <- pmqResponse{fmt.Sprintf("%s", err), false}

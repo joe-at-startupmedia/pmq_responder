@@ -48,7 +48,6 @@ func responder(c chan int) {
 
 	count := 0
 	for {
-		time.Sleep(1 * time.Second)
 		count++
 		if err := mqr.HandleMqRequest(requestProcessor); err != nil {
 			fmt.Printf("Responder: error handling request: %s\n", err)
@@ -104,8 +103,6 @@ func requester(c chan int) {
 		if count >= maxRequestTickNum {
 			break
 		}
-
-		time.Sleep(1 * time.Second)
 	}
 }
 
