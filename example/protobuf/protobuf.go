@@ -91,14 +91,14 @@ func requester(c chan int) {
 				User: "nonroot",
 			},
 		}
-		if err := requestUsingCmd(mqs, cmd, 0); err != nil {
+		if err := requestUsingCmd(mqs, cmd); err != nil {
 			fmt.Printf("Requester: error requesting request: %s\n", err)
 			continue
 		}
 
 		fmt.Printf("Requester: sent a new request: %s \n", cmd.String())
 
-		cmdResp, _, err := waitForCmdResponse(mqs, time.Second)
+		cmdResp, err := waitForCmdResponse(mqs, time.Second)
 
 		if err != nil {
 			fmt.Printf("Requester: error getting response: %s\n", err)
@@ -116,21 +116,21 @@ func requester(c chan int) {
 	}
 }
 
-func requestUsingCmd(mqs *pmq_responder.MqRequester, req *protos.Cmd, priority uint) error {
+func requestUsingCmd(mqs *pmq_responder.MqRequester, req *protos.Cmd) error {
 	if len(req.Id) == 0 {
 		req.Id = uuid.NewString()
 	}
 	pbm := proto.Message(req)
-	return mqs.RequestUsingProto(&pbm, priority)
+	return mqs.RequestUsingProto(&pbm)
 }
 
-func waitForCmdResponse(mqs *pmq_responder.MqRequester, duration time.Duration) (*protos.CmdResp, uint, error) {
+func waitForCmdResponse(mqs *pmq_responder.MqRequester, duration time.Duration) (*protos.CmdResp, error) {
 	mqResp := &protos.CmdResp{}
-	_, prio, err := mqs.WaitForProto(mqResp, duration)
+	_, err := mqs.WaitForProto(mqResp, duration)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	return mqResp, prio, err
+	return mqResp, err
 }
 
 // handleCmdRequest provides a concrete implementation of HandleRequestFromProto using the local Cmd protobuf type

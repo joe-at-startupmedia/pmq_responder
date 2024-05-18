@@ -33,46 +33,47 @@ func openQueueForRequester(config *QueueConfig, owner *Ownership, postfix string
 	return NewMessageQueueWithOwnership(*config, owner, postfix)
 }
 
-func (mqs *MqRequester) Request(data []byte, priority uint) error {
-	return mqs.MqRqst.Send(data, priority)
+func (mqs *MqRequester) Request(data []byte) error {
+	return mqs.MqRqst.Send(data, 0)
 }
 
-func (mqs *MqRequester) RequestUsingMqRequest(req *MqRequest, priority uint) error {
+func (mqs *MqRequester) RequestUsingMqRequest(req *MqRequest) error {
 	if !req.HasId() {
 		req.SetId()
 	}
 	pbm := proto.Message(req.AsProtobuf())
-	return mqs.RequestUsingProto(&pbm, priority)
+	return mqs.RequestUsingProto(&pbm)
 }
 
-func (mqs *MqRequester) RequestUsingProto(req *proto.Message, priority uint) error {
+func (mqs *MqRequester) RequestUsingProto(req *proto.Message) error {
 	data, err := proto.Marshal(*req)
 	if err != nil {
 		return fmt.Errorf("marshaling error: %w", err)
 	}
-	return mqs.Request(data, priority)
+	return mqs.Request(data)
 }
 
-func (mqs *MqRequester) WaitForResponse(duration time.Duration) ([]byte, uint, error) {
-	return mqs.MqResp.TimedReceive(duration)
+func (mqs *MqRequester) WaitForResponse(duration time.Duration) ([]byte, error) {
+	msg, _, err := mqs.MqResp.TimedReceive(duration)
+	return msg, err
 }
 
-func (mqs *MqRequester) WaitForMqResponse(duration time.Duration) (*MqResponse, uint, error) {
+func (mqs *MqRequester) WaitForMqResponse(duration time.Duration) (*MqResponse, error) {
 	mqResp := &protos.Response{}
-	_, prio, err := mqs.WaitForProto(mqResp, duration)
+	_, err := mqs.WaitForProto(mqResp, duration)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	return ProtoResponseToMqResponse(mqResp), prio, err
+	return ProtoResponseToMqResponse(mqResp), err
 }
 
-func (mqs *MqRequester) WaitForProto(pbm proto.Message, duration time.Duration) (*proto.Message, uint, error) {
-	data, prio, err := mqs.MqResp.TimedReceive(duration)
+func (mqs *MqRequester) WaitForProto(pbm proto.Message, duration time.Duration) (*proto.Message, error) {
+	data, _, err := mqs.MqResp.TimedReceive(duration)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	err = proto.Unmarshal(data, pbm)
-	return &pbm, prio, err
+	return &pbm, err
 }
 
 func (mqs *MqRequester) CloseRequester() error {

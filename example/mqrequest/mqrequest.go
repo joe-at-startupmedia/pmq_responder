@@ -84,14 +84,14 @@ func requester(c chan int) {
 		request := fmt.Sprintf("Hello, World : %d\n", count)
 		if err := mqs.RequestUsingMqRequest(&pmq_responder.MqRequest{
 			Arg1: request,
-		}, 0); err != nil {
+		}); err != nil {
 			fmt.Printf("Requester: error requesting request: %s\n", err)
 			continue
 		}
 
 		fmt.Printf("Requester: sent a new request: %s", request)
 
-		msg, _, err := mqs.WaitForMqResponse(time.Second)
+		msg, err := mqs.WaitForMqResponse(time.Second)
 
 		if err != nil {
 			fmt.Printf("Requester: error getting response: %s\n", err)

@@ -109,13 +109,13 @@ func requester(c chan int) {
 }
 
 func requestResponse(mqs *pmq_responder.MqRequester, msg string, c chan pmqResponse) {
-	if err := mqs.Request([]byte(msg), 0); err != nil {
+	if err := mqs.Request([]byte(msg)); err != nil {
 		c <- pmqResponse{fmt.Sprintf("%s", err), false}
 		return
 	}
 	fmt.Printf("Requester: sent a new request: %s", msg)
 
-	resp, _, err := mqs.WaitForResponse(time.Second)
+	resp, err := mqs.WaitForResponse(time.Second)
 
 	if err != nil {
 		c <- pmqResponse{fmt.Sprintf("%s", err), false}
